@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mysql = require("../mysql").pool;
 const lotacao = [
     {
         "id":1,
@@ -49,20 +50,74 @@ const lotacao = [
 //para consultar todos os dados
 router.get('/', (req, res, next) => {
 
-    res.status(200).send({
-        mensagem: "aqui é a lista de Lotação!!!",
-        lotacao: lotacao
+    mysql.getConnection((error, conn) => {
+        conn.query(
+            `SELECT lotacao.id,usuario.nome as 
+            usuario,patrimonio.nome as patrimonio, 
+            empresa.nome as empresa,setor.nome as setor, 
+            lotacao.lotacao FROM lotacao 
+            INNER JOIN usuario on lotacao.idusu=usuario.id 
+            INNER JOIN empresa on lotacao.idemp=empresa.id 
+            INNER JOIN patrimonio on lotacao.idpat=patrimonio.id 
+            INNER JOIN setor on lotacao.idset=setor.id ORDER BY lotacao.id;`,
+            (error, resultado, field) => {
+                conn.release();
+                if (error) {
+                    return res.status(500).send({
+                        error: error,
+                        response: null
+                    })
+                }
+                res.status(200).send({
+                    mensagem: "aqui é a lista de lotação!!!",
+                    lotacao: resultado
+                    // usuario:usuario[1].nome
+                })
+            }
+        )
     })
+
+
+    // res.status(200).send({
+    //     mensagem: "aqui é a lista de Lotação!!!",
+    //     lotacao: lotacao
+    // })
 
 })
 //para consultar um determinado cadastro
 router.get('/:id', (req, res, next) => {
     const id = req.params.id;
-    let listalotacao=lotacao.filter(value=>value.id==id);
-    res.status(200).send({
-        mensagem: `aqui é a lista de Lotação com id:${id}`,
-        lotacao:listalotacao
+    // let listalotacao=lotacao.filter(value=>value.id==id);
+    // res.status(200).send({
+    //     mensagem: `aqui é a lista de Lotação com id:${id}`,
+    //     lotacao:listalotacao
 
+    // })
+    mysql.getConnection((error, conn) => {
+        conn.query(
+            `SELECT lotacao.id,usuario.nome as 
+            usuario,patrimonio.nome as patrimonio, 
+            empresa.nome as empresa,setor.nome as setor, 
+            lotacao.lotacao FROM lotacao 
+            INNER JOIN usuario on lotacao.idusu=usuario.id 
+            INNER JOIN empresa on lotacao.idemp=empresa.id 
+            INNER JOIN patrimonio on lotacao.idpat=patrimonio.id 
+            INNER JOIN setor on lotacao.idset=setor.id WHERE id=?`,[id],
+            (error, resultado, field) => {
+                conn.release();
+                if (error) {
+                    return res.status(500).send({
+                        error: error,
+                        response: null
+                    })
+                }
+                res.status(200).send({
+                    mensagem: "aqui é a lista de lotação!!!",
+                    lotacao: resultado
+                    // usuario:usuario[1].nome
+                })
+            }
+        )
     })
 
 })
@@ -70,29 +125,38 @@ router.get('/:id', (req, res, next) => {
 router.post('/', (req, res, next) => {
     let msg=[];
     let i=0;
+  
+    const lotacao = {
+        idusu: req.body.idusu,
+        idemp: req.body.idemp,
+        idpat: req.body.idpat,
+        idset: req.body.idset,
+        lotacao: req.body.lotacao
 
-    const empresa = {
-        nome: req.body.nome,
-        responsavel: req.body.responsavel,
-        contato: req.body.contato
     }
-    if(lotacao.nome.length<3){
-        msg.push({mensagem:"campo com menos de 3 caracteres!"})
-        i++;
+ 
+    mysql.getConnection((error, conn) => {
+        conn.query(
+            "INSERT INTO `lotacao`(idusu, idemp, idpat, idset, lotacao) values(?,?,?,?,?)",
+            [lotacao.idusu, lotacao.idemp, lotacao.idpat, lotacao.idset, lotacao.lotacao],
+            (error, resultado, field) => {
+                conn.release();
+                if (error) {
+                    return res.status(500).send({
+                        error: error,
+                        response: null
+                    })
+                }
+                res.status(201).send({
+                    mensagem: "Cadastro criado com sucesso",
+                    lotacao: resultado.insertId
+                    // usuario:usuario[1].nome
+                })
+            }
+        )
+    })
     }
 
-    if(i==0){
-        res.status(201).send({
-            mensagem:"Dados inseridos!",
-            lotacaoCriada:lotacao
-        });
-    } else {
-            res.status(400).send({
-            mensagem:msg,
-        })
-    }
-
-}
 )
 //para alterar dados salvos no banco
 router.patch('/', (req, res, next) => {
@@ -137,14 +201,37 @@ router.patch('/', (req, res, next) => {
             i++;
     }
     if(i==0){
-        res.status(201).send({
-            mensagem:"Dados Alterados!",
-            dados:dadosalterados
-        });
-    } else {
-            res.status(400).send({
-            mensagem:msg
-        })
+    //     res.status(201).send({
+    //         mensagem:"Dados Alterados!",
+    //         dados:dadosalterados
+    //     });
+    // } else {
+    //         res.status(400).send({
+    //         mensagem:msg
+    //     })
+    mysql.getConnection((error, conn) => {
+        conn.query(
+            "UPDATE `lotacao` set idusu=?, idemp=?, idpat=?, idset=?, lotacao=? where id=?",
+            [idusu, idemp, idpat, idset, lotacao],
+            (error, resultado, field) => {
+                conn.release();
+                if (error) {
+                    return res.status(500).send({
+                        error: error,
+                        response: null
+                    })
+                }
+                console.log(error);
+                res.status(201).send({
+                    mensagem: "Cadastro alterado com sucesso",
+                })
+            }
+        )
+    })
+} else {
+    res.status(400).send({
+        mensagem: msg
+    })
     }
 
 
@@ -158,15 +245,32 @@ router.patch('/', (req, res, next) => {
 //para apagar dados do banco
 router.delete("/:id", (req, res, next) => {
     const { id } = req.params;
-    let dadosdeletados=lotacao.filter(value=>value.id==id);
-    let listalotacao=lotacao.filter(value=>value.id!=id);
-    res.status(201).send(
-        {
-            mensagem: "Dados deletados com sucesso",
-            dadosnovos:listalotacao,
-            deletados:dadosdeletados
-        }
-    )
+    // let dadosdeletados=lotacao.filter(value=>value.id==id);
+    // let listalotacao=lotacao.filter(value=>value.id!=id);
+    // res.status(201).send(
+    //     {
+    //         mensagem: "Dados deletados com sucesso",
+    //         dadosnovos:listalotacao,
+    //         deletados:dadosdeletados
+    //     }
+    // )
+    mysql.getConnection((error, conn) => {
+        conn.query(
+            `DELETE from lotacao WHERE id=${id}`,
+            (error, resultado, field) => {
+                conn.release();
+                if (error) {
+                    return res.status(500).send({
+                        error: error,
+                        response: null
+                    })
+                }
+                res.status(200).send({
+                    mensagem: "Cadastro deletado com sucesso!!!",
+                })
+            }
+        )
+    })
 })
 
 module.exports = router;

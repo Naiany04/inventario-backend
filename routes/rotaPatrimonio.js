@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mysql = require("../mysql").pool;
 const patrimonio = [
     {
         "id":1,
@@ -27,20 +28,58 @@ const patrimonio = [
 //para consultar todos os dados
 router.get('/', (req, res, next) => {
 
-    res.status(200).send({
-        mensagem: "aqui é a lista de Patrimônios!!!",
-        patrimonio: patrimonio
+    mysql.getConnection((error, conn) => {
+        conn.query(
+            "select * from `patrimonio`",
+            (error, resultado, field) => {
+                conn.release();
+                if (error) {
+                    return res.status(500).send({
+                        error: error,
+                        response: null
+                    })
+                }
+                res.status(200).send({
+                    mensagem: "aqui é a lista de patrimônio!!!",
+                    patrimonio: resultado
+                    // usuario:usuario[1].nome
+                })
+            }
+        )
     })
+    // res.status(200).send({
+    //     mensagem: "aqui é a lista de Patrimônios!!!",
+    //     patrimonio: patrimonio
+    // })
 
 })
 //para consultar um determinado cadastro
 router.get('/:id', (req, res, next) => {
     const id = req.params.id;
-    let listapatrimonio=patrimonio.filter(value=>value.id==id);
-    res.status(200).send({
-        mensagem: `aqui é a lista de Patrimônios com id:${id}`,
-        patrimonio:listapatrimonio
+    // let listapatrimonio=patrimonio.filter(value=>value.id==id);
+    // res.status(200).send({
+    //     mensagem: `aqui é a lista de Patrimônios com id:${id}`,
+    //     patrimonio:listapatrimonio
 
+    // })
+    mysql.getConnection((error, conn) => {
+        conn.query(
+            "select * from `patrimonio` WHERE id=?",[id],
+            (error, resultado, field) => {
+                conn.release();
+                if (error) {
+                    return res.status(500).send({
+                        error: error,
+                        response: null
+                    })
+                }
+                res.status(200).send({
+                    mensagem: "aqui é a lista de patrimônio!!!",
+                    patrimonio: resultado
+                    // usuario:usuario[1].nome
+                })
+            }
+        )
     })
 
 })
@@ -58,14 +97,35 @@ router.post('/', (req, res, next) => {
     }
 
     if(i==0){
-        res.status(201).send({
-            mensagem:"Dados inseridos!",
-            patrimonioCriado:patrimonio
-        });
-    } else {
-            res.status(400).send({
-            mensagem:msg,
-        })
+    //     res.status(201).send({
+    //         mensagem:"Dados inseridos!",
+    //         patrimonioCriado:patrimonio
+    //     });
+    // } else {
+    //         res.status(400).send({
+    //         mensagem:msg,
+    //     })
+    mysql.getConnection((error, conn) => {
+        conn.query(
+            "INSERT INTO `patrimonio`(nome) values(?)",
+            [patrimonio.nome],
+            (error, resultado, field) => {
+                conn.release();
+                if (error) {
+                    return res.status(500).send({
+                        error: error,
+                        response: null
+                    })
+                }
+                res.status(201).send({
+                    mensagem: "Cadastro criado com sucesso",
+                    patrimonio: resultado.insertId
+                    // usuario:usuario[1].nome
+                })
+            }
+        )
+    })
+
     }
 
 }
@@ -97,36 +157,80 @@ router.patch('/', (req, res, next) => {
     //         i++;
     // }
     if(i==0){
-        res.status(201).send({
-            mensagem:"Dados Alterados!",
-            dados:dadosalterados
-        });
-    } else {
-            res.status(400).send({
-            mensagem:msg
+//         res.status(201).send({
+//             mensagem:"Dados Alterados!",
+//             dados:dadosalterados
+//         });
+//     } else {
+//             res.status(400).send({
+//             mensagem:msg
+//         })
+//     }
+
+
+//     res.status(201).send(
+//         {
+//             mensagem: "Dados alterados com sucesso!!!"
+//         }
+//     )
+// })
+
+        mysql.getConnection((error, conn) => {
+            conn.query(
+                "UPDATE `patrimonio` set nome=? where id=?",
+                [nome, id],
+                (error, resultado, field) => {
+                    conn.release();
+                    if (error) {
+                        return res.status(500).send({
+                            error: error,
+                            response: null
+                        })
+                    }
+                    console.log(error);
+                    res.status(201).send({
+                        mensagem: "Cadastro alterado com sucesso",
+                    })
+                }
+            )
+        })
+        } else {
+        res.status(400).send({
+            mensagem: msg
         })
     }
-
-
-    res.status(201).send(
-        {
-            mensagem: "Dados alterados com sucesso!!!"
-        }
-    )
 })
 
 //para apagar dados do banco
 router.delete("/:id", (req, res, next) => {
     const { id } = req.params;
-    let dadosdeletados=patrimonio.filter(value=>value.id==id);
-    let listapatrimonio=patrimonio.filter(value=>value.id!=id);
-    res.status(201).send(
-        {
-            mensagem: "Dados deletados com sucesso",
-            dadosnovos:listapatrimonio,
-            deletados:dadosdeletados
-        }
-    )
+    // let dadosdeletados=patrimonio.filter(value=>value.id==id);
+    // let listapatrimonio=patrimonio.filter(value=>value.id!=id);
+    // res.status(201).send(
+    //     {
+    //         mensagem: "Dados deletados com sucesso",
+    //         dadosnovos:listapatrimonio,
+    //         deletados:dadosdeletados
+    //     }
+    // )
+
+    mysql.getConnection((error, conn) => {
+        conn.query(
+            `DELETE from patrimonio WHERE id=${id}`,
+            (error, resultado, field) => {
+                conn.release();
+                if (error) {
+                    return res.status(500).send({
+                        error: error,
+                        response: null
+                    })
+                }
+                res.status(200).send({
+                    mensagem: "Cadastro deletado com sucesso!!!",
+                })
+            }
+        )
+    })
 })
 
 module.exports = router;

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mysql = require("../mysql").pool;
 const empresa = [
     {
         "id":1,
@@ -39,23 +40,71 @@ const empresa = [
 //para consultar todos os dados
 router.get('/', (req, res, next) => {
 
-    res.status(200).send({
-        mensagem: "aqui é a lista de Empresas!!!",
-        empresa: empresa
-    })
+//     res.status(200).send({
+//         mensagem: "aqui é a lista de Empresas!!!",
+//         empresa: empresa
+//     })
+
+// })
+mysql.getConnection((error, conn) => {
+    conn.query(
+        "select * from `empresa`",
+        (error, resultado, field) => {
+            conn.release();
+            if (error) {
+                return res.status(500).send({
+                    error: error,
+                    response: null
+                })
+            }
+            res.status(200).send({
+                mensagem: "aqui é a lista de empresas!!!",
+                empresa: resultado
+                // usuario:usuario[1].nome
+            })
+        }
+    )
+})
+
 
 })
 //para consultar um determinado cadastro
 router.get('/:id', (req, res, next) => {
-    const id = req.params.id;
-    let listaempresa=empresa.filter(value=>value.id==id);
-    res.status(200).send({
-        mensagem: `aqui é a lista de Empresas com id:${id}`,
-        empresa:listaempresa
+//     const id = req.params.id;
+//     let listaempresa=empresa.filter(value=>value.id==id);
+//     res.status(200).send({
+//         mensagem: `aqui é a lista de Empresas com id:${id}`,
+//         empresa:listaempresa
 
-    })
+//     })
 
+// })
+
+const id = req.params.id;
+
+
+mysql.getConnection((error, conn) => {
+    conn.query(
+        "select * from `empresa` WHERE id=?",[id],
+        (error, resultado, field) => {
+            conn.release();
+            if (error) {
+                return res.status(500).send({
+                    error: error,
+                    response: null
+                })
+            }
+            res.status(200).send({
+                mensagem: "aqui é a lista de empresas!!!",
+                empresa: resultado
+                // usuario:usuario[1].nome
+            })
+        }
+    )
 })
+})
+
+
 //para enviar dados para salvar no banco
 router.post('/', (req, res, next) => {
     let msg=[];
@@ -66,21 +115,44 @@ router.post('/', (req, res, next) => {
         responsavel: req.body.responsavel,
         contato: req.body.contato
     }
+    console.log(empresa)
     if(empresa.nome.length<3){
         msg.push({mensagem:"campo com menos de 3 caracteres!"})
         i++;
     }
 
+
     if(i==0){
-        res.status(201).send({
-            mensagem:"Dados inseridos!",
-            empresaCriada:empresa
-        });
-    } else {
-            res.status(400).send({
-            mensagem:msg,
-        })
-    }
+    //     res.status(201).send({
+    //         mensagem:"Dados inseridos!",
+    //         empresaCriada:empresa
+    //     });
+    // } else {
+    //         res.status(400).send({
+    //         mensagem:msg,
+    //     })
+    // }
+    mysql.getConnection((error, conn) => {
+        conn.query(
+            "INSERT INTO `empresa`(nome, responsavel, contato) values(?,?,?)",
+            [empresa.nome, empresa.responsavel, empresa.contato],
+            (error, resultado, field) => {
+                conn.release();
+                if (error) {
+                    return res.status(500).send({
+                        error: error,
+                        response: null
+                    })
+                }
+                res.status(201).send({
+                    mensagem: "Cadastro criado com sucesso",
+                    empresa: resultado.insertId
+                    // usuario:usuario[1].nome
+                })
+            }
+        )
+    })
+}
 
 }
 )
@@ -118,37 +190,80 @@ router.patch('/', (req, res, next) => {
             msg.push({mensagem:"Contato válido!"})
             i++;
     }
-    if(i==0){
-        res.status(201).send({
-            mensagem:"Dados Alterados!",
-            dados:dadosalterados
-        });
+    // if(i==0){
+    //     res.status(201).send({
+    //         mensagem:"Dados Alterados!",
+    //         dados:dadosalterados
+    //     });
+    // } else {
+    //         res.status(400).send({
+    //         mensagem:msg
+    //     })
+    // }
+    
+    if (i == 0) {
+        mysql.getConnection((error, conn) => {
+            conn.query(
+                "UPDATE `empresa` set nome=?, responsavel=?, contato=? where id=?",
+                [nome, responsavel, contato, id],
+                (error, resultado, field) => {
+                    conn.release();
+                    if (error) {
+                        return res.status(500).send({
+                            error: error,
+                            response: null
+                        })
+                    }
+                    console.log(error);
+                    res.status(201).send({
+                        mensagem: "Cadastro alterado com sucesso",
+                    })
+                }
+            )
+        })
     } else {
-            res.status(400).send({
-            mensagem:msg
+        res.status(400).send({
+            mensagem: msg
         })
     }
 
 
-    res.status(201).send(
-        {
-            mensagem: "Dados alterados com sucesso!!!"
-        }
-    )
+    // res.status(201).send(
+    //     {
+    //         mensagem: "Dados alterados com sucesso!!!"
+    //     }
+    // )
 })
 
 //para apagar dados do banco
 router.delete("/:id", (req, res, next) => {
     const { id } = req.params;
-    let dadosdeletados=empresa.filter(value=>value.id==id);
-    let listaempresa=empresa.filter(value=>value.id!=id);
-    res.status(201).send(
-        {
-            mensagem: "Dados deletados com sucesso",
-            dadosnovos:listaempresa,
-            deletados:dadosdeletados
-        }
-    )
+    // let dadosdeletados=empresa.filter(value=>value.id==id);
+    // let listaempresa=empresa.filter(value=>value.id!=id);
+    // res.status(201).send(
+    //     {
+    //         mensagem: "Dados deletados com sucesso",
+    //         dadosnovos:listaempresa,
+    //         deletados:dadosdeletados
+    //     }
+    // )
+    mysql.getConnection((error, conn) => {
+        conn.query(
+            `DELETE from empresa WHERE id=${id}`,
+            (error, resultado, field) => {
+                conn.release();
+                if (error) {
+                    return res.status(500).send({
+                        error: error,
+                        response: null
+                    })
+                }
+                res.status(200).send({
+                    mensagem: "Cadastro deletado com sucesso!!!",
+                })
+            }
+        )
+    })
 })
 
 module.exports = router;

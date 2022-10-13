@@ -123,6 +123,31 @@ router.get('/:id', (req, res, next) => {
 
 
 })
+//logar na pagina de login
+router.post('/logar',(req,res,next)=>{
+    const{email,senha}=req.body;
+    mysql.getConnection((error,conn)=>{
+     conn.query(
+       "SELECT * FROM usuario where email like ? and senha like ?",
+       [email,senha],
+       (error,resultado,field)=>{
+         conn.release();
+         if(error){
+          return res.status(500).send({
+             error:error,
+             response:null
+           })
+         }
+         res.status(200).send({
+           mensagem:"Dados do Usuário!!!!",
+           usuario:resultado
+         
+         })
+        }
+       )
+     })
+
+})
 //para enviar dados para salvar no banco
 router.post('/', (req, res, next) => {
     let msg = [];
@@ -189,6 +214,7 @@ router.patch('/', (req, res, next) => {
         email: email,
         senha: senha
     }]
+    console.log(array_alterar);
     let lista = usuario.map(item => {
         // if(item==id){
         return (
@@ -227,6 +253,7 @@ router.patch('/', (req, res, next) => {
                             response: null
                         })
                     }
+                    console.log(error);
                     res.status(201).send({
                         mensagem: "Cadastro alterado com sucesso",
                     })
@@ -240,11 +267,11 @@ router.patch('/', (req, res, next) => {
     }
 
 
-    res.status(201).send(
-        {
-            mensagem: "Dados alterados com sucesso!!!"
-        }
-    )
+    // res.status(201).send(
+    //     {
+    //         mensagem: "Dados alterados com sucesso!!!"
+    //     }
+    // )
 })
 
 //para apagar dados do banco
