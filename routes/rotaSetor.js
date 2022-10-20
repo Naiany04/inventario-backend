@@ -55,8 +55,8 @@ router.get('/', (req, res, next) => {
 
 })
 //para consultar um determinado cadastro
-router.get('/:id', (req, res, next) => {
-    const id = req.params.id;
+router.get('/:idsetor', (req, res, next) => {
+    const id = req.params.idsetor;
     // let listasetor=setor.filter(value=>value.id==id);
     // res.status(200).send({
     //     mensagem: `aqui é a lista de Setores com id:${id}`,
@@ -108,7 +108,7 @@ router.post('/', (req, res, next) => {
         mysql.getConnection((error, conn) => {
             conn.query(
                 "INSERT INTO `setor`(nome) values(?)",
-                [usuario.nome],
+                [setor.nome],
                 (error, resultado, field) => {
                     conn.release();
                     if (error) {
